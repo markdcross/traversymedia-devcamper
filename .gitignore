@@ -1,3 +1,6 @@
+courseMaterials/
+config/config.env
+
 # Logs
 logs
 *.log

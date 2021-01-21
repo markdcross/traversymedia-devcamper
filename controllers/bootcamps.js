@@ -1,5 +1,6 @@
 const ErrorResponse = require('../utils/ErrorResponse');
 const Bootcamp = require('../models/Bootcamp');
+const geocoder = require('../utils/geocoder');
 const asyncHandler = require('../middleware/async');
 
 //* ======================================
@@ -81,4 +82,32 @@ exports.deleteBootcamp = asyncHandler(async (req, res, next) => {
   }
 
   res.status(200).json({ success: true, data: {} });
+});
+
+//* ======================================
+//*   @route    GET /api/v1/bootcamps/radius/:zipcode/:distance (This can take a /:units as well)
+//!   @desc     Get bootcamps within a radius
+//*   @access   Private
+//* ======================================
+// You can use lat/lng here instead of zipcode and you don't have to use the geocoder
+exports.getBootcampsInRadius = asyncHandler(async (req, res, next) => {
+  const { zipcode, distance } = req.params;
+
+  // Get lat/lng from geocoder
+  const loc = await geocoder.geocode(zipcode);
+  const lat = loc[0].latitude;
+  const lng = loc[0].longitude;
+
+  // Calc radius using radians
+  // Divide distance by radius of Earth
+  // Earth Radius = 3963 mi, 6378 kilometers
+  const radius = distance / 3963;
+
+  const bootcamps = await Bootcamp.find({
+    location: { $geoWithin: { $centerSphere: [[lng, lat], radius] } }
+  });
+
+  res
+    .status(200)
+    .json({ success: true, count: bootcamps.length, data: bootcamps });
 });
